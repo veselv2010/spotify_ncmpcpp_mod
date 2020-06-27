@@ -1,11 +1,11 @@
 <template>
   <div id="tracklist">
-    <a class="debugButton" v-on:click="loadSavedTracks();loadCurrentTrack();getArtistBiography();">
-      <span>click me</span>
+    <a class="debugButton" v-on:click="loadSavedTracks(`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`);loadCurrentTrack();getArtistBiography();">
+      <span>call all methods</span>
     </a>
     <div class="mainContainer flexColumn">
 
-      <TrackListHeader @load-current-track="updateAlbumCover($event)"/>
+      <TrackListHeader @on-new-track="updateAlbumCover($event)"/>
 
       <div class="savedTracksContainer flexRow">
         <div class="currentTrackImage">
@@ -14,12 +14,15 @@
         <div class="trackContainer">
           <div class="track flexRow" v-for="(track, i) of savedTracks" :key="track + i">
             <a class="darkPinkText trackIndex">{{String(i + 1).padStart(2, '0')}}</a>
-            <a class="whiteText trackName">{{track.name + " "}}</a>
-            <a class="blueText trackArtist">{{track.artist}}</a>
-            <a class="blueText trackEstimatedTime">{{track.estimatedTime}}</a>
+            <a class="whiteText trackName" :href="track.track_uri">{{track.name + " "}}</a>
+            <a class="blueText trackArtist" :href="track.artist_uri">{{track.artist}}</a>
+            <a class="blueText trackEstimatedTime" >{{track.estimatedTime}}</a>
           </div>
         </div>
       </div>
+
+      <div class="futureprogressbar"></div>
+
     </div>
   </div>
 </template>
@@ -44,33 +47,31 @@ export default {
     TrackListHeader,
   },
   methods: {
-    async loadSavedTracks() {
-      let limit = 50;
-      let offset = 0;
-      const selfUserEndpoint = `https://api.spotify.com/v1/me/tracks?limit=${limit}&offset=${offset}`;
-
+    async loadSavedTracks(endpoint) {
       try {
         let res = await axios({
           method: "get",
-          url: selfUserEndpoint
+          url: endpoint,       
         });
 
         for (let item of res.data.items) {
-          const trackName = item.track.name;
-          const trackArtist = item.track.artists[0].name;
           const trackDuration = item.track.duration_ms / 1000;
-          const trackId = item.id;
-
           const formattedDuration = `${Math.floor(trackDuration / 60)}:${String(
             Math.floor(trackDuration % 60)
           ).padStart(2, "0")}`;
 
           this.savedTracks.push({
-            name: trackName,
-            artist: trackArtist,
-            estimatedTime: formattedDuration,
-            id: trackId
+            name:            item.track.name,
+            artist:          item.track.artists[0].name,
+            estimatedTime:   formattedDuration,
+             id:              item.track.id,
+             artist_uri:      item.track.album.artists[0].external_urls.spotify,
+             track_uri:       item.track.external_urls.spotify,
           });
+        }
+
+        if(res.data.next != null) {
+            this.loadSavedTracks(res.data.next, true);          
         }
 
         return res.data;
@@ -106,15 +107,13 @@ export default {
     }
   },
   created() {
-    this.loadSavedTracks();
+    this.loadSavedTracks("https://api.spotify.com/v1/me/tracks?limit=50&offset=0");
   },
 };
 </script>
 
 <style scoped>
-a {
-  white-space: pre;
-}
+
 
 .flexRow {
   display: flex;
@@ -164,5 +163,9 @@ a {
   margin: 2px;
   overflow: auto;
   border-left: 1px #212121 solid;
+}
+
+.futureprogressbar{
+  min-height: 50px;
 }
 </style>

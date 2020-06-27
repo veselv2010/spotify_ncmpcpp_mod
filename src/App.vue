@@ -36,9 +36,18 @@ export default {
   padding: 0;
 }
 
+a {
+  white-space: pre;
+  text-decoration: none;
+}
+
 #app {
   font-family: ProggyTiny, Windows;
   font-size: 12px;
+}
+
+.cursorPointer{
+  cursor: pointer;
 }
 
 .whiteText {
