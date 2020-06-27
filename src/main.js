@@ -8,7 +8,7 @@ import TrackList from '@/components/TrackList';
 
 Vue.use(VueRouter)
 
-Vue.config.productionTip = false
+Vue.config.productionTip = false;
 
 const router = new VueRouter({
   mode: 'history',
