@@ -86,7 +86,7 @@ export default {
                     shuffle_state: res.data.shuffle_state,
                     album_uri: res.data.item.album.external_urls.spotify,
                     artist_uri:
-                        res.data.item.album.artists[0].external_urls.spotify,
+                    res.data.item.album.artists[0].external_urls.spotify,
                     track_uri: res.data.item.external_urls.spotify
                 };
                 this.coveruri = this.currentTrack.coverUri;
