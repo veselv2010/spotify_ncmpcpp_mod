@@ -251,6 +251,7 @@ export default {
 }
 
 .trackContainer {
+    flex: auto;
     min-width: 230px;
 }
 
