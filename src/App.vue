@@ -12,18 +12,11 @@ export default {
 </script>
 
 <style>
-@font-face {
-    font-family: "Windows";
-    src: url("assets/profontwindows-webfont.woff2") format("woff2"),
-        url("assets/profontwindows-webfont.woff") format("woff");
-    font-weight: normal;
-    font-style: normal;
-}
 
 @font-face {
     font-family: "ProggyTiny";
     src: url("assets/proggytinysz-webfont.woff2") format("woff2"),
-        url("assets/proggytinysz-webfont.woff") format("woff");
+         url("assets/proggytinysz-webfont.woff") format("woff");
     font-weight: normal;
     font-style: normal;
 }
@@ -39,7 +32,7 @@ a {
 }
 
 #app {
-    font-family: ProggyTiny, Windows;
+    font-family: ProggyTiny;
     font-size: 12px;
 }
 

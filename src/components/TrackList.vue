@@ -22,8 +22,10 @@
                     </div>
                 </div>
             </div>
+            
 
             <div class="futureprogressbar"></div>
+            <TrackListLyrics/>
         </div>
     </div>
 </template>
@@ -34,6 +36,7 @@ axios.defaults.headers.common["Authorization"] =
     "Bearer " + window.localStorage.getItem("access_token");
 
 import TrackListHeader from "@/components/TrackListHeader";
+import TrackListLyrics from "@/components/TrackListLyrics";
 
 export default {
     name: "TrackList",
@@ -45,7 +48,8 @@ export default {
         };
     },
     components: {
-        TrackListHeader
+        TrackListHeader,
+        TrackListLyrics,
     },
     methods: {
         async loadSavedTracks(endpoint) {

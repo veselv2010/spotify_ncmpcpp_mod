@@ -24,7 +24,7 @@ export default {
         }
 
         localStorage.setItem("access_token", this.token);
-        window.location = "https://murmuring-shelf-94214.herokuapp.com/tracklist";
+        window.location = "http://localhost:8080/tracklist";
     }
 };
 </script>
