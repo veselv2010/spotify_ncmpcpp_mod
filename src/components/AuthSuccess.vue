@@ -24,7 +24,7 @@ export default {
         }
 
         localStorage.setItem("access_token", this.token);
-        window.location = "http://localhost:8080/tracklist";
+        window.location = "https://glacial-cove-48788.herokuapp.com/tracklist";
     }
 };
 </script>
