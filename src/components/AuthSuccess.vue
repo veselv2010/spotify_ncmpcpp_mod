@@ -24,7 +24,7 @@ export default {
         }
 
         localStorage.setItem("access_token", this.token);
-        window.location = "http://localhost:8080/tracklist";
+        this.$router.push("/tracklist");
     }
 };
 </script>
