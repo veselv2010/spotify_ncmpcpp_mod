@@ -64,7 +64,7 @@ export default {
     data() {
         return {
             currentTrackAlbumCoverUri: "",
-            loadedTracks: [],
+            loadedTracks: [], 
             userPlaylists: [],
             selectedPlaylist: {},
             interval: null,
