@@ -24,7 +24,7 @@ export default {
         }
 
         localStorage.setItem("access_token", this.token);
-        window.location = "https://glacial-cove-48788.herokuapp.com/tracklist";
+        window.location = "https://murmuring-shelf-94214.herokuapp.com/tracklist";
     }
 };
 </script>
