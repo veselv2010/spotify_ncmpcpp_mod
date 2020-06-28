@@ -31,9 +31,13 @@ a {
     text-decoration: none;
 }
 
+body{
+    background: darkslategray;
+}
+
 #app {
     font-family: ProggyTiny;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .cursorPointer {
@@ -54,6 +58,14 @@ a {
 
 .darkPinkText {
     color: #a497b0;
+}
+
+.darkGrayText{
+    color: #636363;
+}
+
+.grayText{
+    color: #a6a3a6;
 }
 
 .debugButton {
@@ -79,7 +91,7 @@ a {
     padding: 17px 48px;
     background-color: #1db954;
     color: #ffffff;
-    margin-left: 505px;
+    margin-left: 650px;
 }
 
 .debugButton:hover {

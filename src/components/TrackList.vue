@@ -7,25 +7,46 @@
             <span>call all methods</span>
         </a>
         <div class="mainContainer flexColumn">
-            <TrackListHeader @on-new-track="updateAlbumCover($event)" />
+            <TrackListHeader
+                @on-new-track="updateAlbumCover($event)"
+                @on-playing-click="changePlaylistListState()"
+            />
 
-            <div class="savedTracksContainer flexRow">
-                <div class="currentTrackImage">
-                    <img v-bind:src="this.currentTrackAlbumCoverUri" />
+            <div class="flexRow">
+                <div class="playlistList" v-if="this.isPlaylistListOn">
+                    <div class="playlist flexRow" v-for="(playlist, i) of userPlaylists" :key="playlist + i" @click="onPlaylistClick(playlist.id);selectedPlaylist=playlist" :class="{selectedPlaylist: selectedPlaylist == playlist}"
+                    >
+                        <a class="playlistName darkGrayText">{{playlist.name + " "}}</a>
+                        <a class="playlistTrackCount grayText">{{playlist.total}}</a>
+                    </div>
                 </div>
-                <div class="trackContainer">
-                    <div class="track flexRow" v-for="(track, i) of savedTracks" :key="track + i">
-                        <a class="darkPinkText trackIndex">{{String(i + 1).padStart(2, '0')}}</a>
-                        <a class="whiteText trackName" :href="track.track_uri">{{track.name + " "}}</a>
-                        <a class="blueText trackArtist" :href="track.artist_uri">{{track.artist}}</a>
-                        <a class="blueText trackEstimatedTime">{{track.estimatedTime}}</a>
+
+                <div class="savedTracksContainer flexRow">
+                    <div class="currentTrackImage">
+                        <img v-bind:src="this.currentTrackAlbumCoverUri" />
+                    </div>
+                    <div class="trackContainer">
+                        <div
+                            class="track flexRow"
+                            v-for="(track, i) of loadedTracks"
+                            :key="track + i"
+                        >
+                            <a class="darkPinkText trackIndex">{{String(i + 1).padStart(2, '0')}}</a>
+                            <a
+                                class="whiteText trackName"
+                                :href="track.track_uri"
+                            >{{track.name}}</a>
+                            <a
+                                class="blueText trackArtist"
+                                :href="track.artist_uri"
+                            >{{track.artist}}</a>
+                            <a class="blueText trackEstimatedTime">{{track.estimatedTime}}</a>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-
             <div class="futureprogressbar"></div>
-            <TrackListLyrics/>
+            <TrackListLyrics />
         </div>
     </div>
 </template>
@@ -43,15 +64,56 @@ export default {
     data() {
         return {
             currentTrackAlbumCoverUri: "",
-            savedTracks: [],
-            interval: null
+            loadedTracks: [],
+            userPlaylists: [],
+            selectedPlaylist: {},
+            interval: null,
+            isPlaylistListOn: false
         };
     },
     components: {
         TrackListHeader,
-        TrackListLyrics,
+        TrackListLyrics
     },
     methods: {
+        async loadUserInfo() {
+            try {
+                let res = await axios({
+                    method: "get",
+                    url: "https://api.spotify.com/v1/me"
+                });
+
+                this.loadUserPlaylists(
+                    `https://api.spotify.com/v1/users/${res.data.id}/playlists`
+                );
+                return res.data;
+            } catch (error) {
+                console.log(error.response);
+                return error.response;
+            }
+        },
+
+        async loadUserPlaylists(endpoint) {
+            try {
+                let res = await axios({
+                    method: "get",
+                    url: endpoint
+                });
+
+                for (let item of res.data.items) {
+                    this.userPlaylists.push({
+                        id: item.id,
+                        name: item.name,
+                        total: item.tracks.total
+                    });
+                }
+                return res.data;
+            } catch (error) {
+                console.log(error.response);
+                return error.response;
+            }
+        },
+
         async loadSavedTracks(endpoint) {
             try {
                 let res = await axios({
@@ -68,7 +130,7 @@ export default {
                         "0"
                     )}`;
 
-                    this.savedTracks.push({
+                    this.loadedTracks.push({
                         name: item.track.name,
                         artist: item.track.artists[0].name,
                         estimatedTime: formattedDuration,
@@ -80,7 +142,44 @@ export default {
                 }
 
                 if (res.data.next != null) {
-                    this.loadSavedTracks(res.data.next, true);
+                    this.loadSavedTracks(res.data.next);
+                }
+
+                return res.data;
+            } catch (x) {
+                console.log(x.response);
+                return x.response;
+            }
+        },
+
+        async loadTracksFromPlaylist(endpoint){
+            try {
+                let res = await axios({
+                    method: "get",
+                    url: endpoint + "?fields=id,name,tracks(items(track(name,artists(name,external_urls.spotify),album.name,album.external_urls.spotify,duration_ms,external_urls.spotify)),next)",
+                });
+
+                for (let item of res.data.tracks.items) {
+                    const trackDuration = item.track.duration_ms / 1000;
+                    const formattedDuration = `${Math.floor(
+                        trackDuration / 60
+                    )}:${String(Math.floor(trackDuration % 60)).padStart(
+                        2,
+                        "0"
+                    )}`;
+
+                    this.loadedTracks.push({
+                        name:  item.track.name,
+                        artist: item.track.artists[0].name,
+                        estimatedTime: formattedDuration,
+                       // id: track.id,
+                        artist_uri: item.track.artists[0].external_urls.spotify,
+                        track_uri: item.track.external_urls.spotify
+                    });
+                }
+
+                if (res.data.tracks.next != null) {
+                    this.loadSavedTracks(res.data.next);
                 }
 
                 return res.data;
@@ -114,12 +213,22 @@ export default {
 
         updateAlbumCover(currentTrackAlbumCoverUri) {
             this.currentTrackAlbumCoverUri = currentTrackAlbumCoverUri;
-        }
+        },
+
+        changePlaylistListState() {
+            this.isPlaylistListOn = !this.isPlaylistListOn;
+        },
+
+        onPlaylistClick(playlist_id){
+            this.loadedTracks = [];
+            this.loadTracksFromPlaylist(`https://api.spotify.com/v1/playlists/${playlist_id}`);
+        },
     },
     created() {
         this.loadSavedTracks(
             "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
         );
+        this.loadUserInfo();
     }
 };
 </script>
@@ -136,24 +245,34 @@ export default {
 }
 
 .mainContainer {
-    width: 505px;
+    width: 560px;
     height: 680px;
     background: #1a1a1a;
 }
 
 .trackContainer {
-    display: inline-block;
-    min-width: 313px;
+    min-width: 230px;
 }
 
 .track {
     display: flex;
     justify-content: space-between;
     overflow: hidden;
+    line-height: 15px;
 }
 
 .trackIndex {
     margin-right: 8px;
+}
+
+.trackName{
+    margin-right: 5px;
+    overflow: hidden;
+}
+
+.trackArtist{
+    margin-right: 5px;
+    overflow: hidden;
 }
 
 .trackEstimatedTime {
@@ -162,20 +281,51 @@ export default {
 }
 
 .currentTrackImage {
+    margin-top: 3px;
     margin-right: 15px;
+    min-width: 145px;
+    max-width: 165px;
 }
 
 .currentTrackImage img {
-    width: 160px;
+    width: 100%;
+    height: auto;
 }
 
 .savedTracksContainer {
+    position: relative;
     margin: 2px;
+    border-right: 1px #212121 solid;
     overflow: auto;
-    border-left: 1px #212121 solid;
+    max-height: 640px;
+    flex: 1;
 }
 
 .futureprogressbar {
     min-height: 50px;
+}
+
+.playlistList {
+    max-width: 150px;
+    line-height: 12px;
+    padding-right: 3px;
+    margin-left: 3px;
+}
+
+.playlistTrackCount {
+    margin-left: auto;
+}
+
+.playlistName{
+    margin-right: 2px;
+    overflow: hidden;
+}
+
+.selectedPlaylist{
+    cursor: pointer;
+}
+
+.selectedPlaylist a{
+    color: white;
 }
 </style>

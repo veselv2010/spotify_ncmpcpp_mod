@@ -8,8 +8,8 @@
                     <a class="darkPinkText">[vis]</a>
                 </div>
                 <div class="topCornerText">
-                    <a class="whiteText cursorPointer" v-if="currentTrack.is_playing">[playing]</a>
-                    <a class="whiteText cursorPointer" v-else>[paused]</a>
+                    <a class="whiteText cursorPointer" v-if="currentTrack.is_playing" @click="onPlayingClick()">[playing]</a>
+                    <a class="whiteText cursorPointer" v-else @click="onPlayingClick()">[paused]</a>
                 </div>
             </div>
 
@@ -30,8 +30,8 @@
                     <a class="blueText">{{" " + currentTrack.volume + "%"}}</a>
                 </div>
                 <div class="flexRow rightSide topCornerText">
-                    <a class="darkPinkText cursorPointer" v-if="!isLoved">[+1]</a>
-                    <a class="whiteText cursorPointer" v-else>[+1]</a>
+                    <a class="darkPinkText cursorPointer" v-if="!isLoved">[+l]</a>
+                    <a class="whiteText cursorPointer" v-else>[+l]</a>
                     <a class="darkPinkText">[-m]</a>
                     <a class="whiteText cursorPointer" v-if="!currentTrack.shuffle_state">[----]</a>
                     <a class="whiteText cursorPointer" v-else>[shfl]</a>
@@ -119,6 +119,10 @@ export default {
                 console.log(x.response);
                 return x.response;
             }
+        },
+
+        onPlayingClick(){
+            this.$emit("on-playing-click");
         }
     },
     mounted() {
@@ -153,10 +157,11 @@ export default {
 
 .topContainer {
     padding: 2px 2px 0 2px;
+    border-bottom: 1px solid #212121;
 }
 
 .topCornerText {
     overflow: hidden;
-    line-height: 12px;
+    line-height: 13px;
 }
 </style>
