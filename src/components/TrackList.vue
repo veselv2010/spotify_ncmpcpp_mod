@@ -12,7 +12,7 @@
 
             <div class="flexRow">
                 <div class="playlistList" v-if="isPlaylistListOn">
-                    <div class="flexRow cursorPointer" :class="{selectedPlaylist: selectedPlaylist && selectedPlaylist.id == null}" @click="onLibraryClick()">
+                    <div class="flexRow cursorPointer" :class="{selectedPlaylist: selectedPlaylist == null}" @click="onLibraryClick()">
                         <a class="playlistName darkGrayText">My library</a>
                         <a class="playlistTrackCount grayText">{{libraryTrackCount}}</a>
                     </div>
@@ -206,7 +206,7 @@ export default {
             this.loadedTracks = [];
             const saved = await this.loadSavedTracks(`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`);
             this.loadedTracks = saved.tracks;
-            this.loadedTracks = saved.total;
+            this.loadedTracks.total = saved.total;
         },
 
         updateCurrentTrackId(id) {
@@ -272,6 +272,7 @@ export default {
     justify-content: space-between;
     overflow: hidden;
     line-height: 15px;
+    user-select: none;
 }
 
 .trackIndex {
