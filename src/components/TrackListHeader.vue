@@ -8,7 +8,11 @@
                     <a class="darkPinkText">[vis]</a>
                 </div>
                 <div class="topCornerText">
-                    <a class="whiteText cursorPointer" v-if="currentTrack.is_playing" @click="onPlayingClick()">[playing]</a>
+                    <a
+                        class="whiteText cursorPointer"
+                        v-if="currentTrack.is_playing"
+                        @click="onPlayingClick()"
+                    >[playing]</a>
                     <a class="whiteText cursorPointer" v-else @click="onPlayingClick()">[paused]</a>
                 </div>
             </div>
@@ -30,8 +34,8 @@
                     <a class="blueText">{{" " + currentTrack.volume + "%"}}</a>
                 </div>
                 <div class="flexRow rightSide topCornerText">
-                    <a class="darkPinkText cursorPointer" v-if="!isLoved">[+l]</a>
-                    <a class="whiteText cursorPointer" v-else>[+l]</a>
+                    <a class="darkPinkText cursorPointer" v-if="!isLoved" @click="likeDislikeCurrentTrack()">[+l]</a>
+                    <a class="whiteText cursorPointer" v-else @click="likeDislikeCurrentTrack()">[+l]</a>
                     <a class="darkPinkText">[-m]</a>
                     <a class="whiteText cursorPointer" v-if="!currentTrack.shuffle_state">[----]</a>
                     <a class="whiteText cursorPointer" v-else>[shfl]</a>
@@ -46,13 +50,14 @@ import axios from "axios";
 axios.defaults.headers.common["Authorization"] =
     "Bearer " + window.localStorage.getItem("access_token");
 
+import hotkeys from "hotkeys-js";
+
 let lastTrackId = undefined;
 
 export default {
     name: "TrackListHeader",
     data() {
         return {
-            coveruri: "",
             currentTrack: {},
             isLoved: false,
             interval: null
@@ -86,13 +91,16 @@ export default {
                     shuffle_state: res.data.shuffle_state,
                     album_uri: res.data.item.album.external_urls.spotify,
                     artist_uri:
-                    res.data.item.album.artists[0].external_urls.spotify,
-                    track_uri: res.data.item.external_urls.spotify
+                        res.data.item.album.artists[0].external_urls.spotify,
+                    track_uri: res.data.item.external_urls.spotify,
+                    device_id: res.data.device.id
                 };
-                this.coveruri = this.currentTrack.coverUri;
 
                 if (lastTrackId != this.currentTrack.id) {
-                    this.$emit("on-new-track", this.coveruri);
+                    this.$emit("on-new-track", {
+                        coverUri: this.currentTrack.coverUri,
+                        id: this.currentTrack.id
+                    });
                     lastTrackId = this.currentTrack.id;
                     this.isLoved = await this.isTrackLoved(
                         this.currentTrack.id
@@ -121,13 +129,50 @@ export default {
             }
         },
 
-        onPlayingClick(){
+        onPlayingClick() {
             this.$emit("on-playing-click");
+        },
+
+        async onSpacePressed() {
+            try {
+                let res = await axios({
+                    method: "put",
+                    url: `https://api.spotify.com/v1/me/player/pause?device_id=${this.currentTrack.device_id}`
+                });
+
+                console.log(res.data);
+                return res.data;
+            } catch (x) {
+                console.log(x.response);
+                return x.response;
+            }
+        },
+
+        async likeDislikeCurrentTrack() {
+            let method = this.isLoved ? "delete" : "put";
+            try {
+                let res = await axios({
+                    method: method,
+                    url: `https://api.spotify.com/v1/me/tracks?ids=${this.currentTrack.id}`
+                });
+
+                this.isLoved = !this.isLoved; //чето с этим сделать потом
+
+                return res.data;
+            } catch (x) {
+                console.log(x.response);
+                return x.response;
+            }
         }
     },
     mounted() {
         this.loadCurrentTrack();
         setInterval(this.loadCurrentTrack, 1000);
+
+        hotkeys("space", () => {
+            this.onSpacePressed();
+            return false;
+        });
     }
 };
 </script>

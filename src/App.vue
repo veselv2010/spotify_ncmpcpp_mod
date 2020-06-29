@@ -92,6 +92,7 @@ body{
     background-color: #1db954;
     color: #ffffff;
     margin-left: 650px;
+    margin-top: 50px;
 }
 
 .debugButton:hover {
