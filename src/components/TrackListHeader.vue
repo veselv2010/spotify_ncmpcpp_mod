@@ -47,9 +47,6 @@
 
 <script>
 import axios from "axios";
-axios.defaults.headers.common["Authorization"] =
-    "Bearer " + window.localStorage.getItem("access_token");
-
 import hotkeys from "hotkeys-js";
 
 let lastTrackId = undefined;
