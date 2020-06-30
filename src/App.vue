@@ -15,8 +15,8 @@ export default {
 
 @font-face {
     font-family: "ProggyTiny";
-    src: url("assets/proggytinysz-webfont.woff2") format("woff2"),
-         url("assets/proggytinysz-webfont.woff") format("woff");
+    src: url("assets/proggytinyttsz.woff2") format("woff2"),
+         url("assets/proggytinyttsz.woff") format("woff");
     font-weight: normal;
     font-style: normal;
 }

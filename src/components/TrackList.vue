@@ -3,7 +3,14 @@
         <a class="debugButton" v-on:click="$router.push('/');">
             <span>reload page</span>
         </a>
-        <span class="thanksForInventingJavascript">if everything is undefined try to reload page <br> or play something on spotify</span>
+        <span class="thanksForInventingJavascript">if everything is undefined try to reload page <br> 
+        or play something on spotify<br>
+        <br>
+        [+1] is spotify love button<br>
+        [----] is shuffle button<br>
+        press space to pause playback<br>
+        clicking on [playing] will reveal the playlists list<br>
+        clicking on any track on the right will change current track to it (premium required)</span>
         <div class="mainContainer flexColumn">
             <TrackListHeader
                 @on-new-track="updateAlbumCover($event.coverUri);updateCurrentTrackId($event.id)"
@@ -67,7 +74,7 @@ export default {
     name: "TrackList",
     data() {
         return {
-            libraryTrackCount: 0,
+            libraryTrackCount: "",
             currentTrackAlbumCoverUri: "",
             currentTrackId: null,
             loadedTracks: [],
@@ -90,65 +97,53 @@ export default {
 
             return res.data;
         },
-
+ 
         async loadUserPlaylists(endpoint) {
-            try {
-                const res = await axios.get(endpoint);
+           const res = await axios.get(endpoint);
 
-                for (const item of res.data.items) {
-                    this.userPlaylists.push({
-                        id: item.id,
-                        name: item.name,
-                        total: item.tracks.total
-                    });
-                }
-                return res.data;
-            } catch (error) {
-                console.log(error.response);
-                return error.response;
-            }
+           const playlists = res.data.items.map(item =>{
+               return{
+                   id: item.id,
+                   name: item.name,
+                   total: item.tracks.total
+               };
+           });
+
+           this.userPlaylists = playlists;
+
+           return res.data;
         },
 
         async loadSavedTracks(endpoint) {
             //`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`
-            let tracks = [];
 
-            try {
-                const res = await axios.get(endpoint);
-
-                for (let item of res.data.items) {
-                    const trackDuration = item.track.duration_ms / 1000;
-                    const formattedDuration = `${Math.floor(
-                        trackDuration / 60
-                    )}:${String(Math.floor(trackDuration % 60))
-                            .padStart(2, "0")}`;
-
-                    tracks.push({
-                        name: item.track.name,
-                        artist: item.track.artists[0].name,
-                        estimatedTime: formattedDuration,
-                        id: item.track.id,
-                        artist_uri:
-                            item.track.album.artists[0].external_urls.spotify,
-                        track_uri: item.track.external_urls.spotify
-                    });
-                }
-
-                if (res.data.next != null) {
-                    const nextTracks = await this.loadSavedTracks(res.data.next);
-                    tracks = [...tracks, ...nextTracks.tracks];
-                }
-
-                // this.selectedPlaylist.id = null;
-                // this.libraryTrackCount = res.data.total;
- 
-                return { tracks, total: res.data.total };
-            } catch (x) {
-                console.log(x.response);
-                return x.response;
+            const res = await axios.get(endpoint);
+            let tracks = res.data.items.map(item => {
+                const trackDuration = item.track.duration_ms / 1000;
+                const formattedDuration = Math.floor(trackDuration / 60)
+                        + ':'
+                        + String(
+                            Math.floor(trackDuration % 60)).padStart(2, "0");               
+                return {
+                    name: item.track.name,
+                    artist: item.track.artists[0].name,
+                    estimatedTime: formattedDuration,
+                    id: item.track.id,
+                    artist_uri:
+                        item.track.album.artists[0].external_urls.spotify,
+                    track_uri: item.track.external_urls.spotify,
+                };
+            });
+            
+            if (res.data.next) {
+                const nextTracks = await this.loadSavedTracks(res.data.next);
+                tracks = [...tracks, ...nextTracks.tracks];
             }
-        },
 
+            return { tracks, total: res.data.total };
+
+        },
+       
         async loadTracksFromPlaylist(endpoint) {
             const fields = 'items(track(name,artists(name,external_urls.spotify),album.name,album.external_urls.spotify,duration_ms,external_urls.spotify,id)),next';
             const params = new URLSearchParams({ fields });
@@ -157,32 +152,30 @@ export default {
                     ? endpoint + '&' + params.toString()
                     : endpoint + '?' + params.toString();
                     
-            console.log({ url });
             const res = await axios.get(url);
 
-            const tracks = res.data.items.map(item => {
+            let tracks = res.data.items.map(item => {
                 const trackDuration = item.track.duration_ms / 1000;
-
+                const formattedDuration = Math.floor(trackDuration / 60)
+                        + ':'
+                        + String(
+                            Math.floor(trackDuration % 60)).padStart(2, "0");
                 return {
                     name: item.track.name,
                     artist: item.track.artists[0].name,
-                    estimatedTime: Math.floor(trackDuration / 60)
-                        + ':'
-                        + String(
-                            Math.floor(trackDuration % 60)).padStart(2, "0"),
+                    estimatedTime: formattedDuration,
                     id: item.track.id,
                     artist_uri: item.track.artists[0].external_urls.spotify,
-                    track_uri: item.track.external_urls.spotify
+                    track_uri: item.track.external_urls.spotify,
                 };
-            });
-            
-            this.loadedTracks = [...this.loadedTracks, ...tracks];
+            });        
 
             if (res.data.next) {
-                this.loadTracksFromPlaylist(res.data.next);
+                const nextTracks = await this.loadTracksFromPlaylist(res.data.next);
+                tracks = [...tracks, ...nextTracks];
             }
 
-            return res.data;
+            return tracks;
         },
 
         updateAlbumCover(coverUri) {
@@ -193,12 +186,13 @@ export default {
             this.isPlaylistListOn = !this.isPlaylistListOn;
         },
 
-        onPlaylistClick(playlist) {
+        async onPlaylistClick(playlist) {
             this.loadedTracks = [];
-            this.loadTracksFromPlaylist(
+            const playlistTracks = await this.loadTracksFromPlaylist(
                 `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`
             );
 
+            this.loadedTracks = playlistTracks;
             this.selectedPlaylist = playlist;
         },
         async onLibraryClick() {
@@ -206,7 +200,7 @@ export default {
             this.loadedTracks = [];
             const saved = await this.loadSavedTracks(`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`);
             this.loadedTracks = saved.tracks;
-            this.loadedTracks.total = saved.total;
+            this.libraryTrackCount = saved.total;
         },
 
         updateCurrentTrackId(id) {
