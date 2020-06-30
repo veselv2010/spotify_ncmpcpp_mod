@@ -83,7 +83,7 @@ export default {
                 artist_uri:
                     res.data.item.album.artists[0].external_urls.spotify,
                 track_uri: res.data.item.external_urls.spotify,
-                device_id: res.data.device.id
+                device_id: res.data.device.id,
             };
 
             if (lastTrackId != this.currentTrack.id) {
