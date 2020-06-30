@@ -1,5 +1,5 @@
-# hello-world
-
+# spotify_ncmpcpp_mod
+inspired by https://www.deviantart.com/natyusha/art/foobar-ncmpcpp-mod-289083149
 ## Project setup
 ```
 npm install
