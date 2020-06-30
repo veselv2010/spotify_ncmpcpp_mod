@@ -3,7 +3,14 @@
         <a class="debugButton" v-on:click="$router.push('/');">
             <span>reload page</span>
         </a>
-        <span class="thanksForInventingJavascript">if everything is undefined try to reload page <br> or play something on spotify</span>
+        <span class="thanksForInventingJavascript">if everything is undefined try to reload page <br> 
+        or play something on spotify<br>
+        <br>
+        [+1] is spotify love button<br>
+        [----] is shuffle button<br>
+        press space to pause playback<br>
+        clicking on [playing] will reveal the playlists list<br>
+        clicking on any track on the right will change current track to it (premium required)</span>
         <div class="mainContainer flexColumn">
             <TrackListHeader
                 @on-new-track="updateAlbumCover($event.coverUri);updateCurrentTrackId($event.id)"
@@ -11,8 +18,8 @@
             />
 
             <div class="flexRow">
-                <div class="playlistList" v-if="this.isPlaylistListOn">
-                    <div class="flexRow cursorPointer" :class="{selectedPlaylist: selectedPlaylist.id == undefined}" @click="onLibraryClick()">
+                <div class="playlistList" v-if="isPlaylistListOn">
+                    <div class="flexRow cursorPointer" :class="{selectedPlaylist: selectedPlaylist == null}" @click="onLibraryClick()">
                         <a class="playlistName darkGrayText">My library</a>
                         <a class="playlistTrackCount grayText">{{libraryTrackCount}}</a>
                     </div>
@@ -20,7 +27,7 @@
                         class="playlist flexRow cursorPointer"
                         v-for="(playlist, i) of userPlaylists"
                         :key="playlist + i"
-                        @click="onPlaylistClick(playlist.id);selectedPlaylist=playlist"
+                        @click="onPlaylistClick(playlist)"
                         :class="{selectedPlaylist: selectedPlaylist == playlist}"
                     >
                         <a class="playlistName darkGrayText">{{playlist.name}}</a>
@@ -30,7 +37,7 @@
 
                 <div class="savedTracksContainer flexRow">
                     <div class="currentTrackImage">
-                        <img v-bind:src="this.currentTrackAlbumCoverUri" />
+                        <img :src="this.currentTrackAlbumCoverUri" />
                     </div>
                     <div class="trackContainer">
                         <div
@@ -40,7 +47,9 @@
                             :class="{currentTrack: track.id == currentTrackId}"
                             @click="playSpecificTrack(track.id)"
                         >
-                            <a class="darkPinkText trackIndex">{{track.id == currentTrackId ? getCurrentTrackOperators(String(i + 1).padStart(2, '0')) : String(i + 1).padStart(2, '0')}}</a>
+                            <a class="darkPinkText trackIndex">
+                                {{getTrackIndexDisplay(track, i)}}
+                            </a>
                             <a class="whiteText trackName">{{track.name}}</a>
                             <a
                                 class="blueText trackArtist"
@@ -58,9 +67,6 @@
 
 <script>
 import axios from "axios";
-axios.defaults.headers.common["Authorization"] =
-    "Bearer " + window.localStorage.getItem("access_token");
-
 import TrackListHeader from "@/components/TrackListHeader";
 // import TrackListLyrics from "@/components/TrackListLyrics";
 
@@ -68,12 +74,12 @@ export default {
     name: "TrackList",
     data() {
         return {
-            libraryTrackCount: 0,
+            libraryTrackCount: "",
             currentTrackAlbumCoverUri: "",
-            currentTrackId: "",
+            currentTrackId: null,
             loadedTracks: [],
             userPlaylists: [],
-            selectedPlaylist: {},
+            selectedPlaylist: null,
             interval: null,
             isPlaylistListOn: false
         };
@@ -83,122 +89,93 @@ export default {
     },
     methods: {
         async loadUserInfo() {
-            try {
-                let res = await axios({
-                    method: "get",
-                    url: "https://api.spotify.com/v1/me"
-                });
+            const res = await axios.get("https://api.spotify.com/v1/me");
 
-                this.loadUserPlaylists(
-                    `https://api.spotify.com/v1/users/${res.data.id}/playlists`
-                );
-                return res.data;
-            } catch (error) {
-                console.log(error.response);
-                return error.response;
-            }
+            this.loadUserPlaylists(
+                `https://api.spotify.com/v1/users/${res.data.id}/playlists`
+            );
+
+            return res.data;
         },
-
+ 
         async loadUserPlaylists(endpoint) {
-            try {
-                let res = await axios({
-                    method: "get",
-                    url: endpoint
-                });
+           const res = await axios.get(endpoint);
 
-                for (let item of res.data.items) {
-                    this.userPlaylists.push({
-                        id: item.id,
-                        name: item.name,
-                        total: item.tracks.total
-                    });
-                }
-                return res.data;
-            } catch (error) {
-                console.log(error.response);
-                return error.response;
-            }
+           const playlists = res.data.items.map(item =>{
+               return{
+                   id: item.id,
+                   name: item.name,
+                   total: item.tracks.total
+               };
+           });
+
+           this.userPlaylists = playlists;
+
+           return res.data;
         },
 
         async loadSavedTracks(endpoint) {
             //`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`
-            try {
-                let res = await axios({
-                    method: "get",
-                    url: endpoint
-                });
 
-                for (let item of res.data.items) {
-                    const trackDuration = item.track.duration_ms / 1000;
-                    const formattedDuration = `${Math.floor(
-                        trackDuration / 60
-                    )}:${String(Math.floor(trackDuration % 60)).padStart(
-                        2,
-                        "0"
-                    )}`;
-
-                    this.loadedTracks.push({
-                        name: item.track.name,
-                        artist: item.track.artists[0].name,
-                        estimatedTime: formattedDuration,
-                        id: item.track.id,
-                        artist_uri:
+            const res = await axios.get(endpoint);
+            let tracks = res.data.items.map(item => {
+                const trackDuration = item.track.duration_ms / 1000;
+                const formattedDuration = Math.floor(trackDuration / 60)
+                        + ':'
+                        + String(
+                            Math.floor(trackDuration % 60)).padStart(2, "0");               
+                return {
+                    name: item.track.name,
+                    artist: item.track.artists[0].name,
+                    estimatedTime: formattedDuration,
+                    id: item.track.id,
+                    artist_uri:
                         item.track.album.artists[0].external_urls.spotify,
-                        track_uri: item.track.external_urls.spotify
-                    });
-                }
-
-                if (res.data.next != null) {
-                    this.loadSavedTracks(res.data.next);
-                }
-
-                this.selectedPlaylist.id = undefined;
-                this.libraryTrackCount = res.data.total;
- 
-                return res.data;
-            } catch (x) {
-                console.log(x.response);
-                return x.response;
+                    track_uri: item.track.external_urls.spotify,
+                };
+            });
+            
+            if (res.data.next) {
+                const nextTracks = await this.loadSavedTracks(res.data.next);
+                tracks = [...tracks, ...nextTracks.tracks];
             }
+
+            return { tracks, total: res.data.total };
+
         },
-
+       
         async loadTracksFromPlaylist(endpoint) {
-            try {
-                let res = await axios({
-                    method: "get",
-                    url:
-                        endpoint +
-                        "?fields=id,name,tracks(items(track(name,artists(name,external_urls.spotify),album.name,album.external_urls.spotify,duration_ms,external_urls.spotify)),next)"
-                });
+            const fields = 'items(track(name,artists(name,external_urls.spotify),album.name,album.external_urls.spotify,duration_ms,external_urls.spotify,id)),next';
+            const params = new URLSearchParams({ fields });
 
-                for (let item of res.data.tracks.items) {
-                    const trackDuration = item.track.duration_ms / 1000;
-                    const formattedDuration = `${Math.floor(
-                        trackDuration / 60
-                    )}:${String(Math.floor(trackDuration % 60)).padStart(
-                        2,
-                        "0"
-                    )}`;
+            const url = endpoint.includes('?')
+                    ? endpoint + '&' + params.toString()
+                    : endpoint + '?' + params.toString();
+                    
+            const res = await axios.get(url);
 
-                    this.loadedTracks.push({
-                        name: item.track.name,
-                        artist: item.track.artists[0].name,
-                        estimatedTime: formattedDuration,
-                        // id: track.id,
-                        artist_uri: item.track.artists[0].external_urls.spotify,
-                        track_uri: item.track.external_urls.spotify
-                    });
-                }
+            let tracks = res.data.items.map(item => {
+                const trackDuration = item.track.duration_ms / 1000;
+                const formattedDuration = Math.floor(trackDuration / 60)
+                        + ':'
+                        + String(
+                            Math.floor(trackDuration % 60)).padStart(2, "0");
+                return {
+                    name: item.track.name,
+                    artist: item.track.artists[0].name,
+                    estimatedTime: formattedDuration,
+                    id: item.track.id,
+                    artist_uri: item.track.artists[0].external_urls.spotify,
+                    track_uri: item.track.external_urls.spotify,
+                };
+            });        
 
-                if (res.data.tracks.next != null) {
-                    this.loadSavedTracks(res.data.tracks.next);
-                }
-
-                return res.data;
-            } catch (x) {
-                console.log(x.response);
-                return x.response.data;
+            if (res.data.next) {
+                const nextTracks = await this.loadTracksFromPlaylist(res.data.next);
+                tracks = [...tracks, ...nextTracks];
             }
+
+            return tracks;
         },
 
         updateAlbumCover(coverUri) {
@@ -209,30 +186,35 @@ export default {
             this.isPlaylistListOn = !this.isPlaylistListOn;
         },
 
-        onPlaylistClick(playlist_id) {
+        async onPlaylistClick(playlist) {
             this.loadedTracks = [];
-            this.loadTracksFromPlaylist(
-                `https://api.spotify.com/v1/playlists/${playlist_id}`
+            const playlistTracks = await this.loadTracksFromPlaylist(
+                `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`
             );
+
+            this.loadedTracks = playlistTracks;
+            this.selectedPlaylist = playlist;
         },
-        onLibraryClick(){
-            this.selectedPlaylist = {};
+        async onLibraryClick() {
+            this.selectedPlaylist = null;
             this.loadedTracks = [];
-            this.loadSavedTracks(`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`);
+            const saved = await this.loadSavedTracks(`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`);
+            this.loadedTracks = saved.tracks;
+            this.libraryTrackCount = saved.total;
         },
 
         updateCurrentTrackId(id) {
             this.currentTrackId = id;
         },
-        getCurrentTrackOperators(index){
-            let operators = "";
-            while(operators.length != index.length){
-                operators += ">";
-            }
-            return operators;
+        getTrackIndexDisplay(track, index) {
+            const str = String(index + 1).padStart(2, '0');
+
+            return track.id == this.currentTrackId
+                ? Array(str.length).fill('>').join('')
+                : str;
         },
-        async playSpecificTrack(track_id){
-                try {
+        async playSpecificTrack(track_id) {
+            try {
                 let res = await axios({
                     method: "put",
                     url: `https://api.spotify.com/v1/me/player/play`,
@@ -247,10 +229,11 @@ export default {
         },
 
     },
-    created() {
-        this.loadSavedTracks(
-            "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
-        );
+    async created() {
+        const saved = await this.loadSavedTracks("https://api.spotify.com/v1/me/tracks?limit=50&offset=0");
+        this.loadedTracks = saved.tracks;
+        this.libraryTrackCount = saved.total;
+
         this.loadUserInfo();
     }
 };
@@ -283,6 +266,7 @@ export default {
     justify-content: space-between;
     overflow: hidden;
     line-height: 15px;
+    user-select: none;
 }
 
 .trackIndex {

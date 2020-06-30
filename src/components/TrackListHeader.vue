@@ -47,9 +47,6 @@
 
 <script>
 import axios from "axios";
-axios.defaults.headers.common["Authorization"] =
-    "Bearer " + window.localStorage.getItem("access_token");
-
 import hotkeys from "hotkeys-js";
 
 let lastTrackId = undefined;
@@ -64,105 +61,67 @@ export default {
         };
     },
     methods: {
-        async loadCurrentTrack() {
-            const currentTrackEndPoint = "https://api.spotify.com/v1/me/player";
-            try {
-                let res = await axios({
-                    method: "get",
-                    url: currentTrackEndPoint
+        async loadCurrentTrack() {        
+            let res = await axios.get("https://api.spotify.com/v1/me/player");
+            const estDeltaMs = (res.data.item.duration_ms - res.data.progress_ms) / 1000;
+            const currentTrackTime = Math.floor(estDeltaMs / 60)
+                        + ':'
+                        + String(
+                            Math.floor(estDeltaMs % 60)).padStart(2, "0"); 
+                          
+            this.currentTrack = {
+                name: res.data.item.name,
+                artist: res.data.item.artists[0].name,
+                album: res.data.item.album.name,
+                volume: res.data.device.volume_percent,
+                coverUri: res.data.item.album.images[1].url,
+                id: res.data.item.id,
+                currentTime: currentTrackTime,
+                is_playing: res.data.is_playing,
+                shuffle_state: res.data.shuffle_state,
+                album_uri: res.data.item.album.external_urls.spotify,
+                artist_uri:
+                    res.data.item.album.artists[0].external_urls.spotify,
+                track_uri: res.data.item.external_urls.spotify,
+                device_id: res.data.device.id
+            };
+
+            if (lastTrackId != this.currentTrack.id) {
+                this.$emit("on-new-track", {
+                    coverUri: this.currentTrack.coverUri,
+                    id: this.currentTrack.id
                 });
-
-                const estDeltaMs =
-                    (res.data.item.duration_ms - res.data.progress_ms) / 1000;
-
-                const currentTrackTime = `${Math.floor(
-                    estDeltaMs / 60
-                )}:${String(Math.floor(estDeltaMs % 60)).padStart(2, "0")}`;
-
-                this.currentTrack = {
-                    name: res.data.item.name,
-                    artist: res.data.item.artists[0].name,
-                    album: res.data.item.album.name,
-                    volume: res.data.device.volume_percent,
-                    coverUri: res.data.item.album.images[1].url,
-                    id: res.data.item.id,
-                    currentTime: currentTrackTime,
-                    is_playing: res.data.is_playing,
-                    shuffle_state: res.data.shuffle_state,
-                    album_uri: res.data.item.album.external_urls.spotify,
-                    artist_uri:
-                        res.data.item.album.artists[0].external_urls.spotify,
-                    track_uri: res.data.item.external_urls.spotify,
-                    device_id: res.data.device.id
-                };
-
-                if (lastTrackId != this.currentTrack.id) {
-                    this.$emit("on-new-track", {
-                        coverUri: this.currentTrack.coverUri,
-                        id: this.currentTrack.id
-                    });
-                    lastTrackId = this.currentTrack.id;
-                    this.isLoved = await this.isTrackLoved(
-                        this.currentTrack.id
-                    );
-                }
-
-                return res.data;
-            } catch (x) {
-                console.log(x.response);
-                return x.response;
+                lastTrackId = this.currentTrack.id;
+                this.isLoved = await this.isTrackLoved(this.currentTrack.id);
             }
         },
 
         async isTrackLoved(track_id) {
-            const currentTrackEndPoint = `https://api.spotify.com/v1/me/tracks/contains?ids=${track_id}`;
-            try {
-                let res = await axios({
-                    method: "get",
-                    url: currentTrackEndPoint
-                });
-
-                return res.data[0];
-            } catch (x) {
-                console.log(x.response);
-                return x.response;
-            }
+            let res = await axios.get(`https://api.spotify.com/v1/me/tracks/contains?ids=${track_id}`);
+            return res.data[0];
         },
 
         onPlayingClick() {
             this.$emit("on-playing-click");
         },
 
-        async onSpacePressed() {
-            try {
-                let res = await axios({
-                    method: "put",
-                    url: `https://api.spotify.com/v1/me/player/pause?device_id=${this.currentTrack.device_id}`
-                });
+        async onSpacePressed() {         
+            let res = await axios.put(`https://api.spotify.com/v1/me/player/pause?device_id=${this.currentTrack.device_id}`);
 
-                console.log(res.data);
-                return res.data;
-            } catch (x) {
-                console.log(x.response);
-                return x.response;
-            }
+            return res.data;
         },
 
         async likeDislikeCurrentTrack() {
             let method = this.isLoved ? "delete" : "put";
-            try {
-                let res = await axios({
-                    method: method,
-                    url: `https://api.spotify.com/v1/me/tracks?ids=${this.currentTrack.id}`
-                });
+         
+            let res = await axios({
+                method: method,
+                url: `https://api.spotify.com/v1/me/tracks?ids=${this.currentTrack.id}`
+            });
 
-                this.isLoved = !this.isLoved; //чето с этим сделать потом
+            this.isLoved = !this.isLoved; //чето с этим сделать потом
 
-                return res.data;
-            } catch (x) {
-                console.log(x.response);
-                return x.response;
-            }
+            return res.data;
         }
     },
     mounted() {

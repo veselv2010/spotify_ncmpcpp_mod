@@ -1,10 +1,16 @@
 import Vue from 'vue';
 import App from './App.vue';
 import VueRouter from 'vue-router';
+import axios from 'axios';
 
 import AuthComponent from '@/components/AuthComponent';
 import AuthSuccess from '@/components/AuthSuccess';
 import TrackList from '@/components/TrackList';
+
+if (window.localStorage.getItem("access_token")) {
+    axios.defaults.headers.common["Authorization"] =
+        "Bearer " + window.localStorage.getItem("access_token");
+}
 
 Vue.use(VueRouter)
 
