@@ -1,5 +1,6 @@
 <template>
   <div id="tracklistsidemenu">
+      <input v-model="searchText" class="searchBar" type="search" @input="onLocalSearch()" placeholder="local search"/>
     <div class="playlistList">
       <div
         class="flexRow cursorPointer"
@@ -35,11 +36,13 @@ export default {
         return{
             userPlaylists: null,
             selectedPlaylist: null,
+            searchText: "",
         }
     },
     methods:{
         async onPlaylistClick(playlist) {
             this.selectedPlaylist = playlist;
+            this.searchText = "";
             this.$emit('on-element-click', {endpoint: `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
                                             playlist: playlist});
         },
@@ -71,6 +74,10 @@ export default {
             const res = await axios.get("https://api.spotify.com/v1/me");
             return res.data.id;
         },
+
+        onLocalSearch(){
+            this.$emit('on-local-search', this.searchText);
+        },
     },
     async created(){
         const userId = await this.getUserId();
@@ -96,7 +103,22 @@ export default {
     overflow: hidden;
 }
 
+.selectedPlaylist{
+    background: #161817;
+}
+
 .selectedPlaylist a {
     color: white;
+}
+
+.searchBar{
+    padding: 2px 7px 2px 7px;
+    font-size: 14px;
+    font-family: ProggyTiny;
+    background: #1a1a1a;
+    color: red;
+    border: none;
+    width: 100%;
+    text-align: center;
 }
 </style>

@@ -66,6 +66,11 @@ export default {
     methods: {
         async loadCurrentTrack() {        
             let res = await axios.get("https://api.spotify.com/v1/me/player");
+
+            if(res.data.item == undefined){
+                this.currentTrack = {name: "Nothing is playing!", volume: 0, currentTime: "0:00"};
+                return;
+            }
             const estDeltaMs = (res.data.item.duration_ms - res.data.progress_ms) / 1000;
             const currentTrackTime = Math.floor(estDeltaMs / 60)
                         + ':'

@@ -3,14 +3,16 @@
         <a class="debugButton" v-on:click="$router.push('/');">
             <span>reload page</span>
         </a>
-        <span class="thanksForInventingJavascript">if everything is undefined try to reload page <br> 
-        or play something on spotify<br>
-        <br>
-        [+1] is spotify love button<br>
-        [----] is shuffle button<br>
-        press space to pause playback<br>
-        clicking on [playing] will reveal the playlists list<br>
-        clicking on any track on the right will change current track to it (premium required)</span>
+        <span class="thanksForInventingJavascript">
+            if everything is undefined try to reload page
+            <br />or play something on spotify
+            <br />
+            <br />[+1] is spotify love button
+            <br />[----] is shuffle button
+            <br />press space to pause playback
+            <br />clicking on [playing] will reveal the playlists list
+            <br />clicking on any track on the right will change current track to it (premium required)
+        </span>
         <div class="mainContainer flexColumn">
             <TrackListHeader
                 @on-new-track="updateCurrentTrackCover($event.coverUri);updateCurrentTrackId($event.id)"
@@ -18,14 +20,27 @@
             />
 
             <div class="flexRow">
-                <TrackListSideMenu v-bind="{libraryTrackCount}" :class="{sideMenu: !isSideMenuVisible}" @on-element-click="updateLoadedTracks($event.endpoint);updatePlaylistInfo($event.playlist)"/>
+                <TrackListSideMenu
+                    v-bind="{libraryTrackCount}"
+                    :class="{sideMenu: !isSideMenuVisible}"
+                    @on-element-click="updateLoadedTracks($event.endpoint);updatePlaylistInfo($event.playlist)"
+                    @on-local-search="onLocalSearch($event)"
+                />
 
                 <div class="savedTracksContainer flexRow">
                     <div class="currentTrackImage flexColumn">
                         <img :src="this.currentDisplayingCover" />
-                        <div v-if="selectedPlaylistDescription != '' && selectedPlaylistDescription != null">
-                            <span class="blueText">Description:<br></span>
-                            <span class="playlistDescription whiteText" v-html="selectedPlaylistDescription"></span>
+                        <div
+                            v-if="selectedPlaylistDescription != '' && selectedPlaylistDescription != null"
+                        >
+                            <span class="blueText">
+                                Description:
+                                <br />
+                            </span>
+                            <span
+                                class="playlistDescription whiteText"
+                                v-html="selectedPlaylistDescription"
+                            ></span>
                         </div>
                     </div>
                     <div class="trackContainer">
@@ -36,13 +51,9 @@
                             :class="{currentTrack: track.id == currentTrackId}"
                             @click="playSpecificTrack(track.id)"
                         >
-                            <a class="darkPinkText trackIndex">
-                                {{getTrackIndexDisplay(track, i)}}
-                            </a>
+                            <a class="darkPinkText trackIndex">{{getTrackIndexDisplay(track, i)}}</a>
                             <a class="whiteText trackName">{{track.name}}</a>
-                            <a
-                                class="blueText trackArtist"
-                            >{{track.artist}}</a>
+                            <a class="blueText trackArtist">{{track.artist}}</a>
                             <a class="blueText trackEstimatedTime">{{track.estimatedTime}}</a>
                         </div>
                     </div>
@@ -67,38 +78,41 @@ export default {
             currentTrackCoverUri: null,
             selectedPlaylistDescription: null,
             loadedTracks: [],
-            isSideMenuVisible: false
+            cachedLoadedTracks: [],
+            isSideMenuVisible: false,
+            isLibraryVisible: true,
         };
     },
     components: {
         TrackListHeader,
-        TrackListSideMenu,
+        TrackListSideMenu
     },
     methods: {
         async getTracks(endpoint) {
             const endpointUrl = new URL(endpoint);
-            const fields = 'items(track(name,artists(name,external_urls.spotify),album.name,album.external_urls.spotify,duration_ms,external_urls.spotify,id)),next';
+            const fields =
+                "items(track(name,artists(name,external_urls.spotify),album.name,album.external_urls.spotify,duration_ms,external_urls.spotify,id)),next";
 
-            if(endpointUrl.pathname.includes("v1/playlists/"))
-                endpointUrl.searchParams.set('fields', fields);
+            if (endpointUrl.pathname.includes("v1/playlists/"))
+                endpointUrl.searchParams.set("fields", fields);
 
             const res = await axios.get(endpointUrl);
 
             let tracks = res.data.items.map(item => {
                 const trackDuration = item.track.duration_ms / 1000;
-                const formattedDuration = Math.floor(trackDuration / 60)
-                        + ':'
-                        + String(
-                            Math.floor(trackDuration % 60)).padStart(2, "0");
+                const formattedDuration =
+                    Math.floor(trackDuration / 60) +
+                    ":" +
+                    String(Math.floor(trackDuration % 60)).padStart(2, "0");
                 return {
                     name: item.track.name,
                     artist: item.track.artists[0].name,
                     estimatedTime: formattedDuration,
                     id: item.track.id,
                     artist_uri: item.track.artists[0].external_urls.spotify,
-                    track_uri: item.track.external_urls.spotify,
+                    track_uri: item.track.external_urls.spotify
                 };
-            });        
+            });
 
             if (res.data.next) {
                 const nextTracks = await this.getTracks(res.data.next);
@@ -110,6 +124,9 @@ export default {
 
         updateCurrentTrackCover(coverUri) {
             this.currentTrackCoverUri = coverUri;
+
+            if(this.isLibraryVisible)
+                this.currentDisplayingCover = coverUri;
         },
 
         changeSideMenuDisplayState() {
@@ -120,46 +137,62 @@ export default {
             this.currentTrackId = id;
         },
 
-        async updateLoadedTracks(endpoint){
-            this.loadedTracks = await this.getTracks(endpoint);
+        async updateLoadedTracks(endpoint) {
+            const tracks = await this.getTracks(endpoint);
+            this.loadedTracks = tracks;
+            this.cachedLoadedTracks = tracks;
         },
 
-        updatePlaylistInfo(playlist){
-            if(playlist == null){
+        updatePlaylistInfo(playlist) {
+            if (playlist == null) {
                 this.selectedPlaylistDescription = null;
                 this.currentDisplayingCover = this.currentTrackCoverUri;
+                this.isLibraryVisible = true;
                 return;
             }
 
+            this.isLibraryVisible = false;
             this.currentDisplayingCover = playlist.coverUri;
             this.selectedPlaylistDescription = playlist.description;
         },
 
         getTrackIndexDisplay(track, index) {
-            const str = String(index + 1).padStart(2, '0');
+            const str = String(index + 1).padStart(2, "0");
 
             return track.id == this.currentTrackId
-                ? Array(str.length).fill('>').join('')
+                ? Array(str.length)
+                      .fill(">")
+                      .join("")
                 : str;
         },
         async playSpecificTrack(track_id) {
             await axios({
-                method: 'put',
+                method: "put",
                 url: `https://api.spotify.com/v1/me/player/play`,
-                data: `{"uris":["spotify:track:${track_id}"]}`,
+                data: `{"uris":["spotify:track:${track_id}"]}`
             });
         },
+
+        onLocalSearch(input) {
+            this.loadedTracks = this.cachedLoadedTracks.filter(
+                track =>
+                    track.name.toLowerCase().includes(input) ||
+                    track.artist.toLowerCase().includes(input)
+            );
+        }
     },
     async created() {
-        const saved = await this.getTracks("https://api.spotify.com/v1/me/tracks?limit=50&offset=0");
+        const saved = await this.getTracks(
+            "https://api.spotify.com/v1/me/tracks?limit=50&offset=0"
+        );
         this.loadedTracks = saved;
+        this.cachedLoadedTracks = saved;
         this.libraryTrackCount = saved.length;
     }
 };
 </script>
 
 <style scoped>
-
 .mainContainer {
     width: 560px;
     height: 680px;
@@ -221,26 +254,26 @@ export default {
     flex: 1;
 }
 
-.currentTrack{
+.currentTrack {
     background: #161817;
 }
 
-.currentTrack a:nth-child(1){
+.currentTrack a:nth-child(1) {
     color: #db95e5;
 }
 
-.currentTrack a:nth-child(2){
+.currentTrack a:nth-child(2) {
     color: white;
 }
 
-.thanksForInventingJavascript{
+.thanksForInventingJavascript {
     position: absolute;
     margin-left: 650px;
     margin-top: 100px;
     color: white;
 }
 
-.sideMenu{
+.sideMenu {
     display: none;
 }
 </style>
