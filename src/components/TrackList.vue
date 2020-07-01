@@ -13,20 +13,24 @@
         clicking on any track on the right will change current track to it (premium required)</span>
         <div class="mainContainer flexColumn">
             <TrackListHeader
-                @on-new-track="updateDisplayingCover($event.coverUri);updateCurrentTrackId($event.id)"
+                @on-new-track="updateCurrentTrackCover($event.coverUri);updateCurrentTrackId($event.id)"
                 @on-playing-click="changePlaylistListState()"
             />
 
             <div class="flexRow">
-                <TrackListSideMenu v-bind="{libraryTrackCount}" :class="{sideMenu: !isSideMenuVisible}" @on-element-click="updateLoadedTracks($event)"/>
+                <TrackListSideMenu v-bind="{libraryTrackCount}" :class="{sideMenu: !isSideMenuVisible}" @on-element-click="updateLoadedTracks($event.endpoint);updatePlaylistInfo($event.playlist)"/>
 
                 <div class="savedTracksContainer flexRow">
-                    <div class="currentTrackImage">
+                    <div class="currentTrackImage flexColumn">
                         <img :src="this.currentDisplayingCover" />
+                        <div v-if="selectedPlaylistDescription != '' && selectedPlaylistDescription != null">
+                            <span class="blueText">Description:<br></span>
+                            <span class="playlistDescription whiteText" v-html="selectedPlaylistDescription"></span>
+                        </div>
                     </div>
                     <div class="trackContainer">
                         <div
-                            class="track flexRow cursorPointer"
+                            class="track flexRow cursorPointer noHighlight"
                             v-for="(track, i) of loadedTracks"
                             :key="track + i"
                             :class="{currentTrack: track.id == currentTrackId}"
@@ -61,6 +65,7 @@ export default {
             currentDisplayingCover: {},
             currentTrackId: null,
             currentTrackCoverUri: null,
+            selectedPlaylistDescription: null,
             loadedTracks: [],
             isSideMenuVisible: false
         };
@@ -103,7 +108,7 @@ export default {
             return tracks;
         },
 
-        updateDisplayingCover(coverUri) {
+        updateCurrentTrackCover(coverUri) {
             this.currentTrackCoverUri = coverUri;
 
             // if(this.selectedPlaylist != null){
@@ -112,6 +117,9 @@ export default {
             // }
 
             this.currentDisplayingCover = coverUri;
+        },
+        updateDisplayingCover(){
+
         },
 
         changePlaylistListState() {
@@ -124,6 +132,17 @@ export default {
 
         async updateLoadedTracks(endpoint){
             this.loadedTracks = await this.getTracks(endpoint);
+        },
+
+        updatePlaylistInfo(playlist){
+            if(playlist == null){
+                this.selectedPlaylistDescription = null;
+                this.currentDisplayingCover = this.currentTrackCoverUri;
+                return;
+            }
+
+            this.currentDisplayingCover = playlist.coverUri;
+            this.selectedPlaylistDescription = playlist.description;
         },
 
         getTrackIndexDisplay(track, index) {
@@ -160,6 +179,7 @@ export default {
 .trackContainer {
     flex: auto;
     min-width: 230px;
+    white-space: pre;
 }
 
 .track {
@@ -167,7 +187,6 @@ export default {
     justify-content: space-between;
     overflow: hidden;
     line-height: 15px;
-    user-select: none;
 }
 
 .trackIndex {

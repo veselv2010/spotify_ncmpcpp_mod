@@ -27,7 +27,6 @@ export default {
 }
 
 a {
-    white-space: pre;
     text-decoration: none;
 }
 
@@ -48,6 +47,10 @@ body{
 #app {
     font-family: ProggyTiny;
     font-size: 14px;
+}
+
+.noHighlight{
+    user-select: none;
 }
 
 .cursorPointer {

@@ -39,12 +39,15 @@ export default {
     },
     methods:{
         async onPlaylistClick(playlist) {
-            this.$emit('on-element-click', `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`);
             this.selectedPlaylist = playlist;
+            this.$emit('on-element-click', {endpoint: `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
+                                            playlist: playlist});
         },
+
         async onLibraryClick() {
-            this.$emit('on-element-click', "https://api.spotify.com/v1/me/tracks?limit=50&offset=0");
             this.selectedPlaylist = null;
+            this.$emit('on-element-click', {endpoint: "https://api.spotify.com/v1/me/tracks?limit=50&offset=0",
+                                            playlist: null});
         },
 
         async getUserPlaylists(endpoint) {
@@ -57,12 +60,13 @@ export default {
                    name: item.name,
                    total: item.tracks.total,
                    coverUri: coverUri,
+                   description: item.description,
                };
            });
 
            return playlists;
         },        
-        
+
         async getUserId() {
             const res = await axios.get("https://api.spotify.com/v1/me");
             return res.data.id;

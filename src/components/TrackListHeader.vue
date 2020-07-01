@@ -9,11 +9,11 @@
                 </div>
                 <div class="topCornerText">
                     <a
-                        class="whiteText cursorPointer"
+                        class="whiteText cursorPointer noHighlight"
                         v-if="currentTrack.is_playing"
                         @click="onPlayingClick()"
                     >[playing]</a>
-                    <a class="whiteText cursorPointer" v-else @click="onPlayingClick()">[paused]</a>
+                    <a class="whiteText cursorPointer noHighlight" v-else @click="onPlayingClick()">[paused]</a>
                 </div>
             </div>
 
@@ -37,8 +37,8 @@
                     <a class="darkPinkText cursorPointer" v-if="!isLoved" @click="likeDislikeCurrentTrack()">[+l]</a>
                     <a class="whiteText cursorPointer" v-else @click="likeDislikeCurrentTrack()">[+l]</a>
                     <a class="darkPinkText">[-m]</a>
-                    <a class="whiteText cursorPointer" v-if="!currentTrack.shuffle_state">[----]</a>
-                    <a class="whiteText cursorPointer" v-else>[shfl]</a>
+                    <a class="whiteText cursorPointer" v-if="!currentTrack.shuffle_state" @click="toggleShuffleState()">[----]</a>
+                    <a class="whiteText cursorPointer" v-else @click="toggleShuffleState()">[shfl]</a>
                 </div>
             </div>
         </header>
@@ -122,7 +122,11 @@ export default {
             this.isLoved = !this.isLoved; //чето с этим сделать потом
 
             return res.data;
-        }
+        },
+
+        async toggleShuffleState(){
+            await axios.put(`https://api.spotify.com/v1/me/player/shuffle?state=${!this.currentTrack.shuffle_state}`)
+        },
     },
     mounted() {
         this.loadCurrentTrack();
@@ -137,7 +141,9 @@ export default {
 </script>
 
 <style scoped>
-
+a{
+    white-space: pre;
+}
 .center {
     justify-content: center;
 }
