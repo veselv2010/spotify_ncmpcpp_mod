@@ -31,7 +31,8 @@
                 <div class="flexRow rightSide topCornerText cursorPointer">
                     <a class="blueText">{{currentTrack.currentTime + "r" + " "}}</a>
                     <a class="blueText">@</a>
-                    <a class="blueText">{{" " + currentTrack.volume + "%"}}</a>
+                    <a class="blueText" v-if="!volumeBarState" @mouseenter="volumeMouseEnter()">{{" " + currentTrack.volume + "%"}}</a>
+                    <a class="volumeBar blueText" v-else @mouseleave="volumeMouseLeave()">{{" " + volumeBar}}</a>
                 </div>
                 <div class="flexRow rightSide topCornerText">
                     <a class="darkPinkText cursorPointer" v-if="!isLoved" @click="likeDislikeCurrentTrack()">[+l]</a>
@@ -57,7 +58,9 @@ export default {
         return {
             currentTrack: {},
             isLoved: false,
-            interval: null
+            interval: null,
+            volumeBarState: false,
+            volumeBar: "",
         };
     },
     methods: {
@@ -127,6 +130,18 @@ export default {
         async toggleShuffleState(){
             await axios.put(`https://api.spotify.com/v1/me/player/shuffle?state=${!this.currentTrack.shuffle_state}`)
         },
+
+        volumeMouseEnter(){
+            const slashCount = Math.floor(this.currentTrack.volume / 5);
+            const minusCount = 20 - slashCount;
+            const volumeMeter = [...Array(slashCount).fill('|'), ...Array(minusCount).fill('-')];
+            this.volumeBar = '[' + volumeMeter.toString().split(',').join("") + ']';
+            this.volumeBarState = true;
+        },
+
+        volumeMouseLeave(){
+            this.volumeBarState = false;
+        },
     },
     mounted() {
         this.loadCurrentTrack();
@@ -164,5 +179,9 @@ a{
 .topCornerText {
     overflow: hidden;
     line-height: 13px;
+}
+
+.volumeBar{
+    letter-spacing: -2.5px;
 }
 </style>

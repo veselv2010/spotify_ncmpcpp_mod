@@ -14,7 +14,7 @@
         <div class="mainContainer flexColumn">
             <TrackListHeader
                 @on-new-track="updateCurrentTrackCover($event.coverUri);updateCurrentTrackId($event.id)"
-                @on-playing-click="changePlaylistListState()"
+                @on-playing-click="changeSideMenuDisplayState()"
             />
 
             <div class="flexRow">
@@ -110,19 +110,9 @@ export default {
 
         updateCurrentTrackCover(coverUri) {
             this.currentTrackCoverUri = coverUri;
-
-            // if(this.selectedPlaylist != null){
-            //     this.currentDisplayingCover = this.selectedPlaylist.coverUri;
-            //     return;
-            // }
-
-            this.currentDisplayingCover = coverUri;
-        },
-        updateDisplayingCover(){
-
         },
 
-        changePlaylistListState() {
+        changeSideMenuDisplayState() {
             this.isSideMenuVisible = !this.isSideMenuVisible;
         },
 
