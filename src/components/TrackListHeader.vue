@@ -61,6 +61,7 @@ export default {
             interval: null,
             volumeBarState: false,
             volumeBar: "",
+            pauseContext: {},
         };
     },
     methods: {
@@ -85,6 +86,7 @@ export default {
                 coverUri: res.data.item.album.images[1].url,
                 id: res.data.item.id,
                 currentTime: currentTrackTime,
+                currentTimeMs: res.data.progress_ms,
                 is_playing: res.data.is_playing,
                 shuffle_state: res.data.shuffle_state,
                 album_uri: res.data.item.album.external_urls.spotify,
@@ -114,9 +116,17 @@ export default {
         },
 
         async onSpacePressed() {         
-            let res = await axios.put(`https://api.spotify.com/v1/me/player/pause?device_id=${this.currentTrack.device_id}`);
+            if(this.currentTrack.is_playing){
+                this.pauseContext = this.currentTrack;
+                await axios.put(`https://api.spotify.com/v1/me/player/pause?device_id=${this.currentTrack.device_id}`);
+                return;
+            }
 
-            return res.data;
+            await axios({
+                method: 'put',
+                url: `https://api.spotify.com/v1/me/player/play?device_id=${this.pauseContext.device_id}`,
+                data: `{"position_ms": ${this.pauseContext.currentTimeMs}}`
+            });
         },
 
         async likeDislikeCurrentTrack() {
