@@ -31,6 +31,16 @@ a {
     text-decoration: none;
 }
 
+.flexRow {
+    display: flex;
+    flex-flow: row;
+}
+
+.flexColumn {
+    display: flex;
+    flex-flow: column;
+}
+
 body{
     background: darkslategray;
 }

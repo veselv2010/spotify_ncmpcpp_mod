@@ -137,18 +137,9 @@ export default {
 </script>
 
 <style scoped>
-.flexRow {
-    display: flex;
-    flex-flow: row;
-}
 
 .center {
     justify-content: center;
-}
-
-.flexColumn {
-    display: flex;
-    flex-flow: column;
 }
 
 .leftSide {

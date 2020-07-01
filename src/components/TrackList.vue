@@ -18,22 +18,7 @@
             />
 
             <div class="flexRow">
-                <div class="playlistList" v-if="isPlaylistListOn">
-                    <div class="flexRow cursorPointer" :class="{selectedPlaylist: selectedPlaylist == null}" @click="onLibraryClick()">
-                        <a class="playlistName darkGrayText">My library</a>
-                        <a class="playlistTrackCount grayText">{{libraryTrackCount}}</a>
-                    </div>
-                    <div
-                        class="playlist flexRow cursorPointer"
-                        v-for="(playlist, i) of userPlaylists"
-                        :key="playlist + i"
-                        @click="onPlaylistClick(playlist)"
-                        :class="{selectedPlaylist: selectedPlaylist == playlist}"
-                    >
-                        <a class="playlistName darkGrayText">{{playlist.name}}</a>
-                        <a class="playlistTrackCount grayText">{{playlist.total}}</a>
-                    </div>
-                </div>
+                <TrackListSideMenu v-bind="{libraryTrackCount}" :class="{sideMenu: !isSideMenuVisible}" @on-element-click="updateLoadedTracks($event)"/>
 
                 <div class="savedTracksContainer flexRow">
                     <div class="currentTrackImage">
@@ -66,47 +51,25 @@
 <script>
 import axios from "axios";
 import TrackListHeader from "@/components/TrackListHeader";
+import TrackListSideMenu from "@/components/TrackListSideMenu";
 
 export default {
     name: "TrackList",
     data() {
         return {
-            libraryTrackCount: null,
+            libraryTrackCount: 0,
             currentDisplayingCover: {},
             currentTrackId: null,
             currentTrackCoverUri: null,
             loadedTracks: [],
-            userPlaylists: [],
-            selectedPlaylist: null,
-            interval: null,
-            isPlaylistListOn: false
+            isSideMenuVisible: false
         };
     },
     components: {
         TrackListHeader,
+        TrackListSideMenu,
     },
     methods: {
-        async getUserId() {
-            const res = await axios.get("https://api.spotify.com/v1/me");
-            return res.data.id;
-        },
- 
-        async getUserPlaylists(endpoint) {
-           const res = await axios.get(endpoint);
-
-           const playlists = res.data.items.map(item =>{
-               const coverUri = item.images[0] != undefined ? item.images[0].url : null;
-               return{
-                   id: item.id,
-                   name: item.name,
-                   total: item.tracks.total,
-                   coverUri: coverUri,
-               };
-           });
-
-           return playlists;
-        },
-     
         async getTracks(endpoint) {
             const endpointUrl = new URL(endpoint);
             const fields = 'items(track(name,artists(name,external_urls.spotify),album.name,album.external_urls.spotify,duration_ms,external_urls.spotify,id)),next';
@@ -152,25 +115,17 @@ export default {
         },
 
         changePlaylistListState() {
-            this.isPlaylistListOn = !this.isPlaylistListOn;
-        },
-
-        async onPlaylistClick(playlist) {
-            this.loadedTracks = []; 
-            this.loadedTracks = await this.getTracks(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`);
-            this.selectedPlaylist = playlist;
-        },
-        async onLibraryClick() {
-            this.selectedPlaylist = null;
-            this.loadedTracks = [];
-            const saved = await this.getTracks(`https://api.spotify.com/v1/me/tracks?limit=50&offset=0`);
-            this.loadedTracks = saved;
-            this.libraryTrackCount = saved.length;
+            this.isSideMenuVisible = !this.isSideMenuVisible;
         },
 
         updateCurrentTrackId(id) {
             this.currentTrackId = id;
         },
+
+        async updateLoadedTracks(endpoint){
+            this.loadedTracks = await this.getTracks(endpoint);
+        },
+
         getTrackIndexDisplay(track, index) {
             const str = String(index + 1).padStart(2, '0');
 
@@ -190,23 +145,11 @@ export default {
         const saved = await this.getTracks("https://api.spotify.com/v1/me/tracks?limit=50&offset=0");
         this.loadedTracks = saved;
         this.libraryTrackCount = saved.length;
-
-        const userId = await this.getUserId();
-        this.userPlaylists = await this.getUserPlaylists(`https://api.spotify.com/v1/users/${userId}/playlists`);
     }
 };
 </script>
 
 <style scoped>
-.flexRow {
-    display: flex;
-    flex-flow: row;
-}
-
-.flexColumn {
-    display: flex;
-    flex-flow: column;
-}
 
 .mainContainer {
     width: 560px;
@@ -269,26 +212,6 @@ export default {
     flex: 1;
 }
 
-.playlistList {
-    max-width: 150px;
-    line-height: 12px;
-    padding-right: 3px;
-    margin-left: 3px;
-}
-
-.playlistTrackCount {
-    margin-left: auto;
-}
-
-.playlistName {
-    margin-right: 2px;
-    overflow: hidden;
-}
-
-.selectedPlaylist a {
-    color: white;
-}
-
 .currentTrack{
     background: #161817;
 }
@@ -306,5 +229,9 @@ export default {
     margin-left: 650px;
     margin-top: 100px;
     color: white;
+}
+
+.sideMenu{
+    display: none;
 }
 </style>
