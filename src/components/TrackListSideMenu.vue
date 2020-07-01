@@ -1,6 +1,11 @@
 <template>
   <div id="tracklistsidemenu">
-      <input v-model="searchText" class="searchBar" type="search" @input="onLocalSearch()" placeholder="local search"/>
+      <div class="flexRow">
+            <input v-model="searchText" class="searchBar" type="search" @input="onSearch()"/>
+            <div class="globalSearchSwitch grayText noHighlight cursorPointer" :class="{selectedPlaylist: isGlobalSearchOn}" @click="onGlobalSearchClick()">
+                <a>[global]</a>
+            </div>
+      </div>
     <div class="playlistList">
       <div
         class="flexRow cursorPointer"
@@ -37,6 +42,7 @@ export default {
             userPlaylists: null,
             selectedPlaylist: null,
             searchText: "",
+            isGlobalSearchOn: false,
         }
     },
     methods:{
@@ -75,8 +81,13 @@ export default {
             return res.data.id;
         },
 
-        onLocalSearch(){
-            this.$emit('on-local-search', this.searchText);
+        onGlobalSearchClick(){
+            this.isGlobalSearchOn = !this.isGlobalSearchOn;
+        },
+
+        onSearch(){
+            this.$emit('on-local-search', {text: this.searchText, isGlobal: this.isGlobalSearchOn});
+            this.selectedPlaylist = {};
         },
     },
     async created(){
@@ -120,5 +131,9 @@ export default {
     border: none;
     width: 100%;
     text-align: center;
+}
+
+.globalSearchSwitch{
+    margin-top: 2px;
 }
 </style>

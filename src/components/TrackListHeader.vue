@@ -132,14 +132,12 @@ export default {
         async likeDislikeCurrentTrack() {
             let method = this.isLoved ? "delete" : "put";
          
-            let res = await axios({
+            await axios({
                 method: method,
                 url: `https://api.spotify.com/v1/me/tracks?ids=${this.currentTrack.id}`
             });
 
             this.isLoved = !this.isLoved; //чето с этим сделать потом
-
-            return res.data;
         },
 
         async toggleShuffleState(){

@@ -24,7 +24,7 @@
                     v-bind="{libraryTrackCount}"
                     :class="{sideMenu: !isSideMenuVisible}"
                     @on-element-click="updateLoadedTracks($event.endpoint);updatePlaylistInfo($event.playlist)"
-                    @on-local-search="onLocalSearch($event)"
+                    @on-local-search="onSearch($event)"
                 />
 
                 <div class="savedTracksContainer flexRow">
@@ -173,12 +173,33 @@ export default {
             });
         },
 
-        onLocalSearch(input) {
-            this.loadedTracks = this.cachedLoadedTracks.filter(
-                track =>
-                    track.name.toLowerCase().includes(input) ||
-                    track.artist.toLowerCase().includes(input)
-            );
+        async onSearch(input) {
+            const text = input.text;
+            if(!input.isGlobal) {
+                this.loadedTracks = this.cachedLoadedTracks.filter(
+                    track =>
+                        track.name.toLowerCase().includes(text) ||
+                        track.artist.toLowerCase().includes(text));
+                return;
+            }
+            let res = await axios.get(`https://api.spotify.com/v1/search?q=${text}&type=track&limit=50&offset=0`);
+            const tracks = res.data.tracks.items.map(item =>{
+                const trackDuration = item.duration_ms / 1000;
+                const formattedDuration =
+                    Math.floor(trackDuration / 60) +
+                    ":" +
+                    String(Math.floor(trackDuration % 60)).padStart(2, "0");
+                return{
+                    name: item.name,
+                    artist: item.artists[0].name,
+                    estimatedTime: formattedDuration,
+                    id: item.id,
+                    artist_uri: item.artists[0].external_urls.spotify,
+                    track_uri: item.external_urls.spotify,
+                };
+            });
+            this.loadedTracks = tracks;
+            this.cachedLoadedTracks = tracks;        
         }
     },
     async created() {
