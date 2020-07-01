@@ -9,9 +9,10 @@
             <br />
             <br />[+1] is spotify love button
             <br />[----] is shuffle button
-            <br />press space to pause playback
-            <br />clicking on [playing] will reveal the playlists list
+            <br />press space to play/pause playback
+            <br />clicking on [playing] will reveal the playlists list (premium required)
             <br />clicking on any track on the right will change current track to it (premium required)
+            <br />[global] will enable search "spotify-wide", without it, search acts as a filter to current list of tracks
         </span>
         <div class="mainContainer flexColumn">
             <TrackListHeader
